@@ -11,4 +11,9 @@ class Mymodel extends Authenticatable
     use HasFactory;
     protected $table = "users";
     protected $id = "id";
+
+    public function tasks()
+    {
+        return $this->hasMany(Task::class);
+    }
 }

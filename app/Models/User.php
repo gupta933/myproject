@@ -44,4 +44,12 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
+
+//code for task model for Todo
+    public function tasks()
+    {
+        return $this->hasMany(Task::class);
+    }
+
 }

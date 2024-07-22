@@ -6,7 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
 use Session;
-use App\Models\MyModel;
+use App\Models\Mymodel;
 use Illuminate\Support\Facades\DB;
 
 class MyController extends Controller
@@ -24,11 +24,11 @@ class MyController extends Controller
         $user->email = $reg['email'];
         $user->password =  Hash::make($reg['password']);
         $user->save();
-         // Log the user in
-         Auth::login($user);
-
-         // Redirect to dashboard
-         return redirect('/dashboard');
+          //Login after registration
+      if (Auth::attempt($reg->only('email', 'password'))) {
+        // Authentication passed
+        return redirect()->route('dashboard');
+    }
 
 }
 
