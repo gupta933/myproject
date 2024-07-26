@@ -3,10 +3,11 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Task;
-
+use App\Http\Middleware;
 
 class TaskController extends Controller
 {
+
     public function addTask(Request $request)
     {
         $request->validate([
@@ -15,9 +16,10 @@ class TaskController extends Controller
         ]);
 
         $task = Task::create([
-            "_token" => csrf_token(),
+
             'user_id' => $request->user_id,
             'task' => $request->task,
+            'status' => 'pending'
         ]);
 
         return response()->json(['task' => $task, 'status' => 1, 'message' => 'Successfully created a task']);
