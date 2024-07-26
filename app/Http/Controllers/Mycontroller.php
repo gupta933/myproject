@@ -7,6 +7,8 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
 use Session;
 use App\Models\Mymodel;
+use App\Models\Task;
+
 use Illuminate\Support\Facades\DB;
 
 class MyController extends Controller
@@ -52,8 +54,9 @@ public function login(Request $request){
 
 //dashboard
 public function dashboard(){
-    $user = Auth::user();
-        return view('dashboard', compact('user'));
+        $user = auth()->user();
+        $tasks = $user->tasks;
+        return view('dashboard', compact('user', 'tasks'));
 }
 
 //logout
