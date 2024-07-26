@@ -1,38 +1,130 @@
 <!doctype html>
 <html lang="en">
   <head>
-    <!-- Required meta tags -->
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-
-    <!-- Bootstrap CSS -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" integrity="sha384-xOolHFLEh07PJGoPkLv1IbcEPTNtaed2xpHsD9ESMhqIYd0nLMwNLD69Npy4HI+N" crossorigin="anonymous">
-
-    <title>DashBoard</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
+    <meta name="api-key" content="helloatg">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>Dashboard</title>
   </head>
   <body>
     <div class="container">
-    @if (isset($user))
-        <h1>Hello,<span class="text-success"> {{ $user->name }} !</span></h1>
-        <h2>Welcome to DashBoard</h2>
-        <a href="logout" class="btn text-danger bg-warning" style="text-align: right">Logout</a>
-    @else
-        <?php
-         return view('index');
-        ?>
-    @endif
-</div>
-    <!-- Optional JavaScript; choose one of the two! -->
+        @if (isset($user))
+            <h1>Hello, <span class="text-success">{{ $user->name }}!</span></h1>
+            <h2>Welcome to Dashboard</h2>
+            <a href="{{ route('logout') }}" class="btn text-danger bg-warning" style="text-align: right">Logout</a>
+        @else
+            <?php return view('index'); ?>
+        @endif
+    </div>
+    <br><br>
+    <div class="container mt-5">
+        <form id="addTaskForm">
+            <div class="form-group">
+                <label for="task">New Task</label>
+                <input type="text" class="form-control" id="task" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Add Task</button>
+        </form>
+        <h2 class="mt-4">Your Tasks</h2>
+        <ul class="list-group mt-4" id="taskList">
+            @forelse ($tasks as $task)
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <span>{{ $task->task }}</span>
+                    <div>
+                        <button class="btn btn-success btn-sm mark-done" data-id="{{ $task->id }}">Mark Done</button>
+                        <button class="btn btn-warning btn-sm mark-pending" data-id="{{ $task->id }}">Mark Pending</button>
+                    </div>
+                </li>
+            @empty
+                <li class="list-group-item">You have no tasks yet.</li>
+            @endforelse
+        </ul>
+    </div>
 
-    <!-- Option 1: jQuery and Bootstrap Bundle (includes Popper) -->
-    <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-Fy6S3B9q64WdZWQUiU+q4/2Lc9npb8tCaSX9FK7E8HnRr0Jz8D6OP9dO5Vg3Q9ct" crossorigin="anonymous"></script>
+    <!-- jQuery and Bootstrap JS -->
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
 
-    <!-- Option 2: Separate Popper and Bootstrap JS -->
-    <!--
-    <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js" integrity="sha384-9/reFTGAW83EW2RDu2S0VKaIzap3H66lZH81PoYlFhbGU+6BZp6G7niu735Sk7lN" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.min.js" integrity="sha384-+sLIOodYLS7CIrQpBjl+C7nPvqq+FbNUBDunl/OZv93DB7Ln/533i8e/mZXLi/P+" crossorigin="anonymous"></script>
-    -->
+    <script>
+        $(document).ready(function() {
+            $('#addTaskForm').on('submit', function(e) {
+               // e.preventDefault();
+
+                const task = $('#task').val();
+                const userId = "{{ auth()->user()->id }}";
+                const apiKey = $('meta[name="api-key"]').attr('content');
+                const csrfToken = $('meta[name="csrf-token"]').attr('content');
+
+                $.ajax({
+                    url: '/api/todo/add',
+                    method: 'POST',
+                    headers: {
+                        'API_KEY': apiKey,
+                        'X-CSRF-TOKEN': csrfToken
+                    },
+                    data: {
+                        task: task,
+                        user_id: userId
+                    },
+                    success: function(response) {
+                        if (response.status === 1) {
+                            $('#taskList').append(`
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    <span>${response.task.task}</span>
+                                    <div>
+                                        <button class="btn btn-success btn-sm mark-done" data-id="${response.task.id}">Mark Done</button>
+                                        <button class="btn btn-warning btn-sm mark-pending" data-id="${response.task.id}">Mark Pending</button>
+                                    </div>
+                                </li>
+                            `);
+                            $('#task').val('');
+                        } else {
+                            alert(response.message);
+                        }
+                    }
+                });
+            });
+
+            $('#taskList').on('click', '.mark-done', function() {
+                const taskId = $(this).data('id');
+                const apiKey = $('meta[name="api-key"]').attr('content');
+
+                $.ajax({
+                    url: '/api/todo/status',
+                    method: 'POST',
+                    headers: { 'API_KEY': apiKey },
+                    data: { task_id: taskId, status: 'done' },
+                    success: function(response) {
+                        if (response.status === 1) {
+                            location.reload();
+                        } else {
+                            alert(response.message);
+                        }
+                    }
+                });
+            });
+
+            $('#taskList').on('click', '.mark-pending', function() {
+                const taskId = $(this).data('id');
+                const apiKey = $('meta[name="api-key"]').attr('content');
+
+                $.ajax({
+                    url: '/api/todo/status',
+                    method: 'POST',
+                    headers: { 'API_KEY': apiKey },
+                    data: { task_id: taskId, status: 'pending' },
+                    success: function(response) {
+                        if (response.status === 1) {
+                            location.reload();
+                        } else {
+                            alert(response.message);
+                        }
+                    }
+                });
+            });
+        });
+    </script>
   </body>
 </html>
